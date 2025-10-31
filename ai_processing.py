@@ -17,8 +17,8 @@ def classify_item(image_path):
         # Muat gambar menggunakan PIL
         img = Image.open(image_path)
 
-        # Inisialisasi model Vision
-        model = genai.GenerativeModel('gemini-pro-vision')
+        # Inisialisasi model Vision (Gunakan model terbaru)
+        model = genai.GenerativeModel('gemini-2.5-flash')
 
         # Prompt yang cerdas untuk meminta output terstruktur
         prompt = (
