@@ -1,20 +1,24 @@
 import os
-import base64 # Penting: Diperlukan untuk encoding gambar
-from openai import OpenAI
+import google.generativeai as genai
 from PIL import Image
 import json
 
-# Inisialisasi Klien OpenAI
-# Ini akan otomatis mengambil kunci dari Environment Variable
+# Inisialisasi Klien Google
+# Ini akan otomatis mengambil kunci GOOGLE_API_KEY
 # yang Anda set di FASE 0 (Langkah 8)
-client = OpenAI()
+try:
+    genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
+except Exception as e:
+    print(f"Error Konfigurasi Google API: {e}. Pastikan GOOGLE_API_KEY sudah di set.")
 
 def classify_item(image_path):
-    """Mengirim gambar ke OpenAI Vision API untuk klasifikasi."""
+    """Mengirim gambar ke Google Gemini Vision API untuk klasifikasi."""
     try:
-        # Konversi gambar lokal ke base64 (syarat untuk API)
-        with open(image_path, "rb") as image_file:
-            base64_image = base64.b64encode(image_file.read()).decode("utf-8")
+        # Muat gambar menggunakan PIL
+        img = Image.open(image_path)
+
+        # Inisialisasi model Vision
+        model = genai.GenerativeModel('gemini-pro-vision')
 
         # Prompt yang cerdas untuk meminta output terstruktur
         prompt = (
@@ -25,22 +29,11 @@ def classify_item(image_path):
             "Gaya harus mencakup model atau bahan (misal: 'Kemeja Polos', 'Jeans Slim Fit')."
         )
 
-        response = client.chat.completions.create(
-            model="gpt-4-vision-preview", # Model yang kuat untuk visi
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": prompt},
-                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
-                    ],
-                }
-            ],
-            max_tokens=300,
-        )
+        # Kirim prompt dan gambar ke model
+        response = model.generate_content([prompt, img])
         
         # Ekstraksi dan pembersihan JSON
-        ai_output = response.choices[0].message.content.strip()
+        ai_output = response.text.strip()
         
         # Membersihkan jika ada ```json ... ```
         if ai_output.startswith("```json"):
@@ -49,5 +42,5 @@ def classify_item(image_path):
         return json.loads(ai_output)
 
     except Exception as e:
-        print(f"Error saat klasifikasi AI Vision: {e}")
+        print(f"Error saat klasifikasi AI Vision (Gemini): {e}")
         return None
