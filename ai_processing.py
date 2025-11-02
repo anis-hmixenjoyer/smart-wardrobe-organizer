@@ -11,6 +11,20 @@ try:
 except Exception as e:
     print(f"Error Konfigurasi Google API: {e}. Pastikan GOOGLE_API_KEY sudah di set.")
 
+def clean_json_response(response_text):
+    """
+    Helper function to clean and extract JSON from Gemini's response.
+    Handles markdown code blocks like ```json ... ``` or ``` ... ```.
+    (Fungsi ini disamakan dengan styling_logic.py agar konsisten)
+    """
+    response_text = response_text.strip()
+    if response_text.startswith("```json") and response_text.endswith("```"):
+        return response_text[7:-3].strip()  # Remove ```json and ```
+    elif response_text.startswith("```") and response_text.endswith("```"):
+        return response_text[3:-3].strip()  # Remove ``` and ```
+    else:
+        return response_text  # Assume it's already clean JSON
+
 def classify_item(image_path):
     """Mengirim gambar ke Google Gemini Vision API untuk klasifikasi."""
     try:
@@ -32,15 +46,33 @@ def classify_item(image_path):
         # Kirim prompt dan gambar ke model
         response = model.generate_content([prompt, img])
         
+        # Ekstraksi dan pembersihan JSON menggunakan helper function
+        ai_output = clean_json_response(response.text)
+        
+        # Konversi string JSON ke dictionary Python
+        parsed_json = json.loads(ai_output)
+        
         # Ekstraksi dan pembersihan JSON
-        ai_output = response.text.strip()
+        # ai_output = response.text.strip()
         
         # Membersihkan jika ada ```json ... ```
-        if ai_output.startswith("```json"):
-            ai_output = ai_output[7:-3].strip()
+        # if ai_output.startswith("```json"):
+        #     ai_output = ai_output[7:-3].strip()
             
-        return json.loads(ai_output)
+        # return json.loads(ai_output)
+    
+        # Validasi dasar (bisa ditambahkan sesuai kebutuhan)
+        required_keys = {"jenis", "warna", "gaya"}
+        if not required_keys.issubset(parsed_json.keys()):
+            raise ValueError("Respons AI Vision tidak memiliki format JSON yang diharapkan.")
 
+        return parsed_json
+
+    except json.JSONDecodeError as e:
+        print(f"Error parsing JSON dari AI Vision: {e}")
+        ai_output = response.text # Ambil text mentah sebelum dibersihkan
+        print(f"Raw output dari AI Vision: {ai_output}")
+        return None # Kembalikan None jika gagal
     except Exception as e:
         print(f"Error saat klasifikasi AI Vision (Gemini): {e}")
         return None
