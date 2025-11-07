@@ -1,6 +1,17 @@
 import os
 import google.generativeai as genai
 import json
+import requests
+from dotenv import load_dotenv
+
+# ---------------------------------------------
+# PENTING: Panggil load_dotenv() di awal skrip
+# ---------------------------------------------
+load_dotenv()
+
+# Ambil kunci dari Environment Variable
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+OPENWEATHER_API_KEY = os.environ.get("OPENWEATHER_API_KEY")
 
 # Inisialisasi Klien Google
 # Ini akan otomatis mengambil kunci GOOGLE_API_KEY
@@ -22,7 +33,46 @@ def clean_json_response(response_text):
     else:
         return response_text  # Assume it's already clean JSON
 
-def get_ootd_feedback(item_list):
+def get_weather_data(city_name):
+    """Mengambil suhu dan kondisi cuaca dari OpenWeatherMap."""
+    # global OPENWEATHER_API_KEY # Gunakan kunci yang sudah dimuat di atas
+
+    if not OPENWEATHER_API_KEY:
+        print("OPENWEATHER_API_KEY tidak ditemukan. Menggunakan cuaca default.")
+        return "Unknown, default to pleasant weather (25°C, Cerah)"
+        
+    base_url = "http://api.openweathermap.org/data/2.5/weather"
+    params = {
+        'q': city_name,
+        'appid': OPENWEATHER_API_KEY,
+        'units': 'metric', # Celsius
+        'lang': 'id'       # Bahasa Indonesia
+    }
+
+    try:
+        response = requests.get(base_url, params=params)
+        response.raise_for_status() # Cek error HTTP (misal: 404 kota tidak ditemukan)
+        data = response.json()
+        
+        temperature = data['main']['temp']
+        description = data['weather'][0]['description'].capitalize()
+        
+        # Format string cuaca untuk AI
+        weather_string = f"Suhu: {temperature}°C, Kondisi: {description}."
+        
+        # Tambahkan kondisi jika suhu ekstrem (memberi konteks yang lebih kuat pada AI)
+        if temperature > 30:
+            weather_string += " Cuaca sangat panas dan terik."
+        elif temperature < 15:
+            weather_string += " Cuaca dingin. Perlu pakaian berlapis."
+            
+        return weather_string
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Error saat mengambil data cuaca dari kota '{city_name}': {e}")
+        return "Unknown, default to pleasant weather (25°C, Cerah)"
+
+def get_ootd_feedback(item_list, current_weather):
     """
     Mengirim daftar item (sebagai dict/json) ke Google Gemini
     untuk mendapatkan feedback fashion.
@@ -31,11 +81,10 @@ def get_ootd_feedback(item_list):
     # Ubah daftar item menjadi string JSON agar mudah dibaca AI
     items_json_string = json.dumps(item_list, indent=2)
     
-    # Inisialisasi model (gunakan model yang tersedia dan stabil)
-    model = genai.GenerativeModel('gemini-2.5-flash')  # Corrected model name
+    # Inisialisasi model
+    model = genai.GenerativeModel('gemini-2.5-flash')
     
     # Ini adalah "Prompt Engineering"
-    # Kita memberi instruksi AI secara spesifik
     prompt = (
         "Anda adalah 'OOTD Oracle', seorang fashion stylist AI yang ramah dan suportif.\n"
         "Tugas Anda adalah menilai kecocokan kombinasi pakaian berikut yang diberikan dalam format JSON:\n"
@@ -68,6 +117,7 @@ def get_ootd_feedback(item_list):
 
     except json.JSONDecodeError as e:
         print(f"Error parsing JSON dari AI: {e}")
+        ai_output = response.text # Ambil text mentah sebelum dibersihkan
         print(f"Raw output dari AI: {ai_output}")
         return {
             "rating": 0,
@@ -86,23 +136,45 @@ def get_ootd_feedback(item_list):
         }
 
 # --- BLOK UNTUK TES MANDIRI ---
-# Kamu bisa menjalankan file ini langsung untuk tes
-# 'python styling_logic.py'
+# Catatan: Fungsi get_weather_data() dan get_ootd_feedback() harus sudah didefinisikan
+# di atas blok ini, seperti yang telah kita bahas sebelumnya.
 if __name__ == "__main__":
-    print("--- Memulai Tes Logika Styling ---")
+    print("--- Memulai Tes Logika Styling dengan Cuaca ---")
     
-    # Buat 2 item palsu untuk tes
-    tes_atasan = {'jenis': 'Atasan', 'warna': 'Biru Langit', 'gaya': 'Kemeja Katun'}
-    tes_bawahan = {'jenis': 'Bawahan', 'warna': 'Hitam', 'gaya': 'Jeans Slim Fit'}
+    # 1. Definisikan Kota yang akan diuji
+    # Ganti dengan kota lain, misalnya "Jakarta", "Surabaya", atau "London" untuk cuaca yang kontras
+    TEST_CITY = "Depok" 
+
+    # 2. Ambil data cuaca dari API
+    # Panggilan ke fungsi get_weather_data (Membutuhkan OPENWEATHER_API_KEY)
+    current_weather = get_weather_data(TEST_CITY)
+    print(f"Cuaca di {TEST_CITY}: {current_weather}")
     
-    print(f"Menguji: {tes_atasan['gaya']} + {tes_bawahan['gaya']}")
+    # 3. Buat item palsu untuk diuji
+    # Pakaian yang dipilih (Contoh: Outfit yang lebih cocok untuk cuaca panas)
+    selected_outfit_items = [
+        {'jenis': 'Atasan', 'warna': 'Putih', 'gaya': 'Kemeja Linen Tipis'}, 
+        {'jenis': 'Bawahan', 'warna': 'Biru Muda', 'gaya': 'Celana Chino Pendek'} 
+    ]
     
-    # Panggil fungsi utamamu
-    hasil_feedback = get_ootd_feedback([tes_atasan, tes_bawahan])
+    # Mencetak item yang sedang diuji
+    print("\nItem yang Diuji:")
+    for item in selected_outfit_items:
+        print(f" - {item['gaya']} ({item['warna']})")
+
+    # 4. Panggil fungsi AI dengan menyertakan item DAN data cuaca
+    # Panggilan ke fungsi get_ootd_feedback (Membutuhkan GOOGLE_API_KEY)
+    hasil_feedback = get_ootd_feedback(selected_outfit_items, current_weather)
     
+    # 5. Tampilkan hasil feedback
     if hasil_feedback and hasil_feedback.get('rating', 0) > 0:
-        print("\n[OK] Hasil Feedback AI:")
+        print("\n[OK] Hasil Feedback AI (Dicetak ke Terminal):")
         print(json.dumps(hasil_feedback, indent=2))
+        
+        # Contoh cara mengakses feedback spesifik
+        print(f"\nRating: {hasil_feedback.get('rating')}/10")
+        print(f"Komentar: {hasil_feedback.get('feedback')}")
+        print(f"Saran: {hasil_feedback.get('saran')}")
     else:
         print("\n[GAGAL] Gagal mendapatkan feedback.")
         print("Detail:", json.dumps(hasil_feedback, indent=2))
