@@ -3,17 +3,19 @@ from PIL import Image
 from rembg import remove
 import os
 import shutil  # Kita perlu ini untuk menyalin file
+import base64  # Diperlukan untuk memuat CSS
 
 
 # Impor fungsi dari file rekan satu tim kamu
 # Pastikan semua file (.py) ada di folder yang sama
 try:
     from ai_processing import classify_item, remove_background
-    from data_management import load_wardrobe, save_item_to_wardrobe
+    # IMPORT FUNGSI BARU (delete_item_from_wardrobe) DARI data_management
+    from data_management import load_wardrobe, save_item_to_wardrobe, delete_item_from_wardrobe
     # (Ganti nama 'logika_styling' jika berbeda)
     from logika_styling import get_ootd_feedback, get_weather_data
 except ImportError:
-    st.error("Gagal memuat file .py (ai_processing, data_management, logika_styling). Pastikan semua file ada di folder yang sama.")
+    st.error("Failed to load module files (ai_processing, data_management, logika_styling). Make sure all files are in the same folder.")
     st.stop()
 
 
@@ -23,17 +25,35 @@ except ImportError:
 st.set_page_config(page_title="Smart Wardrobe", page_icon="👗", layout="wide")
 
 
+
+
+# --- FUNGSI DESAIN BARU: Memuat CSS Kustom ---
+def load_css(file_name):
+    """Fungsi untuk memuat file CSS kustom dari lokal."""
+    try:
+        with open(file_name, "r") as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    except FileNotFoundError:
+        st.error(f"CSS file '{file_name}' not found. Make sure it's in the same folder.")
+
+
+# Panggil fungsi CSS di sini
+load_css("style.css")
+
+
+
+
 # --- Inisialisasi Direktori ---
-# Folder untuk upload sementara
 TEMP_DIR = "temp_uploads"
 if not os.path.exists(TEMP_DIR):
     os.makedirs(TEMP_DIR)
 
 
-# Folder untuk menyimpan gambar lemari secara permanen
 PERMANENT_DIR = "wardrobe_images"
 if not os.path.exists(PERMANENT_DIR):
     os.makedirs(PERMANENT_DIR)
+
+
 
 
 # --- Fungsi Bantuan ---
@@ -45,161 +65,126 @@ def save_uploaded_file(uploaded_file):
             f.write(uploaded_file.getbuffer())
         return img_path
     except Exception as e:
-        st.error(f"Error menyimpan file: {e}")
+        st.error(f"Error saving file: {e}")
         return None
+
+
 
 
 def get_new_item_id(wardrobe_list):
     """Membuat ID unik baru berdasarkan jumlah item saat ini."""
-    # Ini akan membuat ID seperti CLO001, CLO002, dst.
     return f"CLO{len(wardrobe_list) + 1:03d}"
-
-
-def make_image_permanent(temp_path, new_id):
-    """Menyalin gambar dari temp ke folder permanen."""
-    try:
-        # Dapatkan ekstensi file (misal: .jpg, .png)
-        file_extension = os.path.splitext(temp_path)[1]
-        permanent_path = os.path.join(PERMANENT_DIR, f"{new_id}{file_extension}")
-       
-        # Salin file
-        shutil.copyfile(temp_path, permanent_path)
-       
-        # Hapus file sementara
-        os.remove(temp_path)
-        return permanent_path
-    except Exception as e:
-        st.error(f"Gagal memindahkan file ke lemari: {e}")
-        return None
 
 
 # --- Tampilan Utama Aplikasi ---
 st.title("Smart Wardrobe 👗")
-st.caption("Asisten Fashion Pribadimu. Tidak ada lagi 'bingung mau pakai baju apa'.")
+st.caption("Your Personal Fashion Assistant. No more 'I have nothing to wear' moments.")
 
 
 # --- Gunakan TABS untuk memisahkan fungsionalitas ---
 tab1, tab2, tab3 = st.tabs([
-    "👕 1. Tambah Baju ke Lemari",
-    "🧐 2. Lihat Lemari Digital",
+    "👕 1. Add Item to Closet",
+    "🧐 2. View Digital Closet",
     "✨ 3. Mix & Match OOTD"
 ])
+
+
 
 
 # =======================================================================
 # --- TAB 1: Katalogisasi / Tambah Baju ---
 # =======================================================================
 with tab1:
-    st.header("Upload Pakaianmu")
-    st.write("Foto satu item pakaianmu (atasan, bawahan, dll.) untuk disimpan di lemari digital.")
+    st.header("Upload Your Clothing")
+    st.write("Upload a photo of a single clothing item (top, bottom, etc.) to save it to your digital closet.")
    
-    uploaded_image = st.file_uploader("Pilih gambar pakaian...", type=["jpg", "jpeg", "png"], key="uploader")
+    uploaded_image = st.file_uploader("Choose a clothing image...", type=["jpg", "jpeg", "png"], key="uploader")
    
     col1, col2 = st.columns(2)
    
     with col1:
         if uploaded_image:
-            st.image(uploaded_image, caption="Gambar yang di-upload", use_container_width=True)
+            st.image(uploaded_image, caption="Uploaded Image", use_container_width=True)
            
-            # Tombol untuk memproses gambar
-            if st.button("Analisa Pakaian Ini", key="analyze_btn", use_container_width=True):
-                with st.spinner("AI sedang menganalisa gambarmu..."):
-                    # 1. Simpan file sementara
+            if st.button("Analyze This Item", key="analyze_btn", use_container_width=True):
+                with st.spinner("AI is analyzing your image..."):
                     temp_path = save_uploaded_file(uploaded_image)
                    
                     if temp_path:
-                        # 2. Panggil AI Vision (dari ai_processing.py)
                         classification_result = classify_item(temp_path)
                        
                         if classification_result:
-                            st.success("Analisa Selesai!")
-                            # Simpan hasil di session state untuk disimpan nanti
+                            st.success("Analysis Complete!")
                             st.session_state.current_item = classification_result
                             st.session_state.temp_image_path = temp_path
-                            # Refresh halaman untuk menampilkan hasil di kolom 2
                             st.rerun()
                         else:
-                            st.error("Gagal menganalisa gambar. Coba lagi.")
+                            st.error("Failed to analyze image. Please try again.")
    
     with col2:
-        # Tombol Simpan (muncul setelah analisa berhasil)
         if 'current_item' in st.session_state:
-            st.subheader("Hasil Analisa AI")
+            st.subheader("AI Analysis Result")
             st.json(st.session_state.current_item)
-            st.info("Jika hasil analisa sudah benar, simpan ke lemari.")
+            st.info("If the analysis is correct, save it to your closet.")
 
 
-            if st.button("Simpan ke Lemari Digital", key="save_btn", type="primary", use_container_width=True):
-                
+            if st.button("Save to Digital Closet", key="save_btn", type="primary", use_container_width=True):
+               
                 item_data = st.session_state.current_item
                 temp_path = st.session_state.temp_image_path
-                
-                with st.spinner("Menghapus background dan menyimpan..."):
-                    # 1. Dapatkan ID baru
+               
+                with st.spinner("Removing background and saving..."):
                     current_wardrobe = load_wardrobe()
                     new_id = get_new_item_id(current_wardrobe)
-                    
-                    # 2. PANGGIL FUNGSI BARU (dari ai_processing.py)
-                    # Ini mengembalikan object PIL.Image yang sudah bersih
                     processed_pil_image = remove_background(temp_path)
-                    
-                    # 3. Tentukan path permanen
-                    # WAJIB .png agar transparansi tersimpan
                     permanent_path = os.path.join(PERMANENT_DIR, f"{new_id}.png")
-                    
+                   
                     try:
-                        # 4. Simpan gambar yang sudah diproses ke path permanen
                         processed_pil_image.save(permanent_path, "PNG")
-                        
-                        # Hapus file sementara (yang original)
                         os.remove(temp_path)
-                        
-                        # 5. Tambahkan ID dan Path Gambar (.png) ke data
                         item_data['id'] = new_id
-                        item_data['image_path'] = permanent_path # Path ke file .png
-                        
-                        # 6. Panggil Data Management
+                        item_data['image_path'] = permanent_path
                         save_item_to_wardrobe(item_data)
-                        
-                        st.success(f"Item {new_id} berhasil disimpan (tanpa background)!")
+                        st.success(f"Item {new_id} saved successfully (without background)!")
                         st.balloons()
-                        
-                        # Hapus dari state setelah disimpan
+                       
                         del st.session_state.current_item
                         del st.session_state.temp_image_path
-                        st.rerun() # Refresh untuk membersihkan
-                        
+                        st.rerun()
+                       
                     except Exception as e:
-                        st.error(f"Gagal menyimpan gambar yang diproses: {e}")
+                        st.error(f"Failed to save processed image: {e}")
+
+
 
 
 # =======================================================================
-# --- TAB 2: Lihat Lemari Digital (BARU) ---
+# --- TAB 2: Lihat Lemari Digital (Update Desain + Delete) ---
 # =======================================================================
 with tab2:
-    st.header("Isi Lemari Digitalmu")
-    st.write("Lihat dan cari semua koleksi pakaian yang sudah kamu simpan.")
+    st.header("Your Digital Closet")
+    st.write("View, search, and delete all the items you have saved.")
 
 
     wardrobe = load_wardrobe()
 
 
     if not wardrobe:
-        st.warning("Lemari digitalmu masih kosong. Silakan 'Tambah Baju' di Tab 1 dulu.")
+        st.warning("Your digital closet is empty. Please add items in Tab 1 first.")
     else:
         # --- Opsi Filter ---
-        st.subheader("Filter Lemari")
+        st.subheader("Filter Closet")
         all_jenis = sorted(list(set(item['jenis'] for item in wardrobe)))
         all_warna = sorted(list(set(item['warna'] for item in wardrobe)))
 
 
-        col_f1, col_f2 = st.columns(2)
+        col_f1, col_f2, col_f3 = st.columns(3)
         with col_f1:
-            filter_jenis = st.multiselect("Filter berdasarkan Jenis:", all_jenis)
+            filter_jenis = st.multiselect("Filter by Type:", all_jenis)
         with col_f2:
-            filter_warna = st.multiselect("Filter berdasarkan Warna:", all_warna)
-       
-        filter_gaya = st.text_input("Cari berdasarkan Gaya (misal: 'Kemeja', 'Jeans'):")
+            filter_warna = st.multiselect("Filter by Color:", all_warna)
+        with col_f3:
+            filter_gaya = st.text_input("Search by Style (e.g., 'Shirt', 'Jeans'):")
 
 
         # --- Logika Filter ---
@@ -213,136 +198,114 @@ with tab2:
 
 
         st.divider()
-        st.write(f"Menampilkan **{len(filtered_wardrobe)}** dari **{len(wardrobe)}** total item.")
+        st.write(f"Showing **{len(filtered_wardrobe)}** of **{len(wardrobe)}** total items.")
 
 
-        # --- Tampilan Grid Visual ---
+        # --- Tampilan Grid Visual (DENGAN CSS CARD) ---
         num_cols = 5
         cols = st.columns(num_cols)
        
         for i, item in enumerate(filtered_wardrobe):
             with cols[i % num_cols]:
-                img_path = item.get('image_path', '')
-               
-                # Tampilkan gambar jika ada, jika tidak, tampilkan placeholder
-                if os.path.exists(img_path):
-                    st.image(img_path, use_container_width=True, caption=f"ID: {item['id']}")
-                else:
-                    st.image("https://placehold.co/200x200/eee/aaa?text=No+Image", use_container_width=True)
-               
-                # Tampilkan detail
-                st.markdown(f"**{item['gaya']}**")
-                st.markdown(f"**Jenis:** {item['jenis']}")
-                st.markdown(f"**Warna:** {item['warna']}")
-                st.markdown("---") # Pemisah antar item
+                # PERBAIKAN: Bungkus setiap kartu dengan st.container()
+                # CSS akan secara otomatis menargetkan container ini
+                with st.container():
+                    img_path = item.get('image_path', '')
+                   
+                    if os.path.exists(img_path):
+                        st.image(img_path, use_container_width=True)
+                    else:
+                        st.image("https://placehold.co/200x200/eee/aaa?text=No+Image", use_container_width=True)
+                   
+                    # Tampilkan detail
+                    st.markdown(f"<h6>{item['gaya']}</h6>", unsafe_allow_html=True)
+                    st.markdown(f"**Type:** {item['jenis']}")
+                    st.markdown(f"**Color:** {item['warna']}")
+                    st.caption(f"ID: {item['id']}")
+                   
+                    # FITUR BARU: Tombol Hapus
+                    st.markdown("---") # Pemisah kecil
+                    if st.button("Delete", key=f"delete_{item['id']}", use_container_width=True):
+                        try:
+                            # Panggil fungsi delete dari data_management.py
+                            delete_item_from_wardrobe(item['id'])
+                            st.toast(f"Item {item['id']} has been deleted.")
+                            st.rerun() # Refresh halaman untuk update galeri
+                        except Exception as e:
+                            st.error(f"Failed to delete item: {e}")
+
+
 
 
 # =======================================================================
-# --- TAB 3: Mix & Match (OOTD Generator) ---
+# --- TAB 3: Mix & Match (OOTD Generator) (Update Desain) ---
 # =======================================================================
 with tab3:
-    st.header("Cek Kecocokan OOTD")
-    st.write("Pilih 2 atau 3 item dari lemari digitalmu untuk dinilai oleh AI Stylist.")
+    st.header("Check OOTD Compatibility")
+    st.write("Select 2 or 3 items from your digital closet to be rated by the AI Stylist.")
 
 
     wardrobe = load_wardrobe()
    
     if not wardrobe:
-        st.warning("Lemari digitalmu masih kosong. Silakan 'Tambah Baju' di Tab 1 dulu.")
+        st.warning("Your digital closet is empty. Please add items in Tab 1 first.")
     else:
-        selected_items = []
-        st.subheader("**Pilih Pakaian:**")
+        st.subheader("**Select Items:**")
 
 
-        # --- Tampilan Grid Visual dengan Checkbox ---
+        # --- Tampilan Grid Visual dengan Checkbox (DENGAN CSS CARD) ---
         num_cols = 5
         cols = st.columns(num_cols)
        
+        selected_items_data = []
+       
         for i, item in enumerate(wardrobe):
             with cols[i % num_cols]:
-                img_path = item.get('image_path', '')
-               
-                if os.path.exists(img_path):
-                    st.image(img_path, use_container_width=True)
-                else:
-                    st.image("https://placehold.co/200x200/eee/aaa?text=No+Image", use_container_width=True)
-               
-                # Buat label yang deskriptif untuk checkbox
-                item_label = f"({item['id']}) {item['gaya']}"
-                if st.checkbox(item_label, key=f"select_{item['id']}"):
-                    selected_items.append(item)
-       
+                # PERBAIKAN: Bungkus setiap kartu dengan st.container()
+                with st.container():
+                    img_path = item.get('image_path', '')
+                   
+                    if os.path.exists(img_path):
+                        st.image(img_path, use_container_width=True)
+                    else:
+                        st.image("https://placehold.co/200x200/eee/aaa?text=No+Image", use_container_width=True)
+                   
+                    item_label = f"({item['id']}) {item['gaya']}"
+                   
+                    if st.checkbox(item_label, key=f"select_{item['id']}"):
+                        selected_items_data.append(item)
+
+
         st.divider()
 
 
         # --- Logika Cek OOTD ---
-        # st.subheader("Kirim ke AI Stylist")
-        # is_ready_to_check = (len(selected_items) >= 2)
+        st.subheader("Send to AI Stylist")
        
-        # if st.button("Kasih Feedback, Oracle!", disabled=(not is_ready_to_check), type="primary", use_container_width=True):
-        #     if len(selected_items) > 3:
-        #         st.error("Pilih maksimal 3 item saja ya.")
-        #     else:
-        #         with st.spinner("AI Stylist sedang memadupadankan..."):
-        #             # 4. Panggil AI Styling (dari logika_styling.py)
-        #             feedback_result = get_ootd_feedback(selected_items)
-                   
-        #             if feedback_result:
-        #                 # 5. Tampilkan hasil dengan cantik
-        #                 st.subheader("Kata OOTD Oracle:")
-                       
-        #                 rating_val = feedback_result.get('rating', 0)
-        #                 st.metric(label="Rating Kecocokan", value=f"{rating_val}/10")
-                       
-        #                 st.info(f"**Feedback:** {feedback_result.get('feedback', 'N/A')}")
-        #                 st.success(f"**Saran:** {feedback_result.get('saran', 'N/A')}")
-        #             else:
-        #                 st.error("Gagal mendapatkan feedback dari AI Stylist.")
-        # elif not is_ready_to_check:
-        #     st.caption("Pilih minimal 2 item untuk dinilai.")
-        # --- Logika Cek OOTD ---
-        st.subheader("Kirim ke AI Stylist")
-        
-        # TAMBAHKAN INPUT KOTA DI SINI
-        city = st.text_input("Masukkan Kotamu (misal: Jakarta, Depok):", "Jakarta")
-        
-        is_ready_to_check = (len(selected_items) >= 2)
-        
-        if st.button("Kasih Feedback, Oracle!", disabled=(not is_ready_to_check), type="primary", use_container_width=True):
-            
-            # Validasi tambahan
+        city = st.text_input("Enter your city (e.g., Jakarta, New York):", "Jakarta")
+       
+        is_ready_to_check = (len(selected_items_data) >= 2)
+       
+        if st.button("Get Feedback, Oracle!", disabled=(not is_ready_to_check), type="primary", use_container_width=True):
+           
             if not city:
-                st.error("Harap masukkan nama kota untuk cek cuaca!")
-            elif len(selected_items) > 3:
-                st.error("Pilih maksimal 3 item saja ya.")
+                st.error("Please enter a city name to check the weather!")
+            elif len(selected_items_data) > 3:
+                st.error("Please select a maximum of 3 items.")
             else:
-                with st.spinner(f"Mengecek cuaca di {city} dan memadupadankan..."):
-                    
-                    # 1. DAPATKAN INFO CUACA DULU
+                with st.spinner(f"Checking weather in {city} and mixing matches..."):
+                   
                     current_weather_info = get_weather_data(city)
-                    
-                    # 2. PANGGIL FUNGSI DENGAN DUA ARGUMEN
-                    feedback_result = get_ootd_feedback(selected_items, current_weather_info)
-                    
+                    feedback_result = get_ootd_feedback(selected_items_data, current_weather_info)
+                   
                     if feedback_result:
-                        # ... sisa kodemu (tampilkan hasil)
-                        st.subheader("Kata OOTD Oracle:")
-                        
+                        st.subheader("The OOTD Oracle says:")
                         rating_val = feedback_result.get('rating', 0)
-                        st.metric(label="Rating Kecocokan", value=f"{rating_val}/10")
-                        
-                        # Tampilkan juga info cuaca yang dipakai AI
-                        st.caption(f"Penilaian berdasarkan cuaca: {current_weather_info}")
-                        
+                        st.metric(label="Compatibility Rating", value=f"{rating_val}/10")
+                        st.caption(f"Rating based on weather: {current_weather_info}")
                         st.info(f"**Feedback:** {feedback_result.get('feedback', 'N/A')}")
-                        st.success(f"**Saran:** {feedback_result.get('saran', 'N/A')}")
+                        st.success(f"**Suggestion:** {feedback_result.get('saran', 'N/A')}")
                     else:
-                        st.error("Gagal mendapatkan feedback dari AI Stylist.")
+                        st.error("Failed to get feedback from the AI Stylist.")
         elif not is_ready_to_check:
-            st.caption("Pilih minimal 2 item untuk dinilai.")
-
-
-# Untuk menjalankan aplikasi ini:
-# 1. Buka terminal
-# 2. Aktifkan venv: .\venv\Scripts\activate
-# 3. Jalankan: streamlit run app.py
+            st.caption("Select at least 2 items to get a rating.")
