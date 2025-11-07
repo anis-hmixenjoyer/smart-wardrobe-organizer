@@ -18,14 +18,8 @@ except ImportError:
     st.error("Failed to load module files (ai_processing, data_management, logika_styling). Make sure all files are in the same folder.")
     st.stop()
 
-
-
-
 # --- Konfigurasi Halaman ---
 st.set_page_config(page_title="Smart Wardrobe", page_icon="👗", layout="wide")
-
-
-
 
 # --- FUNGSI DESAIN BARU: Memuat CSS Kustom ---
 def load_css(file_name):
@@ -36,25 +30,17 @@ def load_css(file_name):
     except FileNotFoundError:
         st.error(f"CSS file '{file_name}' not found. Make sure it's in the same folder.")
 
-
 # Panggil fungsi CSS di sini
 load_css("style.css")
-
-
-
 
 # --- Inisialisasi Direktori ---
 TEMP_DIR = "temp_uploads"
 if not os.path.exists(TEMP_DIR):
     os.makedirs(TEMP_DIR)
 
-
 PERMANENT_DIR = "wardrobe_images"
 if not os.path.exists(PERMANENT_DIR):
     os.makedirs(PERMANENT_DIR)
-
-
-
 
 # --- Fungsi Bantuan ---
 def save_uploaded_file(uploaded_file):
@@ -68,18 +54,13 @@ def save_uploaded_file(uploaded_file):
         st.error(f"Error saving file: {e}")
         return None
 
-
-
-
 def get_new_item_id(wardrobe_list):
     """Membuat ID unik baru berdasarkan jumlah item saat ini."""
     return f"CLO{len(wardrobe_list) + 1:03d}"
 
-
 # --- Tampilan Utama Aplikasi ---
 st.title("Smart Wardrobe 👗")
 st.caption("Your Personal Fashion Assistant. No more 'I have nothing to wear' moments.")
-
 
 # --- Gunakan TABS untuk memisahkan fungsionalitas ---
 tab1, tab2, tab3 = st.tabs([
@@ -87,9 +68,6 @@ tab1, tab2, tab3 = st.tabs([
     "🧐 2. View Digital Closet",
     "✨ 3. Mix & Match OOTD"
 ])
-
-
-
 
 # =======================================================================
 # --- TAB 1: Katalogisasi / Tambah Baju ---
@@ -155,9 +133,6 @@ with tab1:
                     except Exception as e:
                         st.error(f"Failed to save processed image: {e}")
 
-
-
-
 # =======================================================================
 # --- TAB 2: Lihat Lemari Digital (Update Desain + Delete) ---
 # =======================================================================
@@ -165,21 +140,22 @@ with tab2:
     st.header("Your Digital Closet")
     st.write("View, search, and delete all the items you have saved.")
 
-
     wardrobe = load_wardrobe()
-
 
     if not wardrobe:
         st.warning("Your digital closet is empty. Please add items in Tab 1 first.")
     else:
         # --- Opsi Filter ---
         st.subheader("Filter Closet")
-        all_jenis = sorted(list(set(item['jenis'] for item in wardrobe)))
-        all_warna = sorted(list(set(item['warna'] for item in wardrobe)))
+        # --- PERUBAHAN DI SINI ---
+        # Menggunakan kunci 'type' dan 'color'
+        all_jenis = sorted(list(set(item['type'] for item in wardrobe)))
+        all_warna = sorted(list(set(item['color'] for item in wardrobe)))
 
 
         col_f1, col_f2, col_f3 = st.columns(3)
         with col_f1:
+            # Label diubah ke 'Type'
             filter_jenis = st.multiselect("Filter by Type:", all_jenis)
         with col_f2:
             filter_warna = st.multiselect("Filter by Color:", all_warna)
@@ -190,16 +166,17 @@ with tab2:
         # --- Logika Filter ---
         filtered_wardrobe = wardrobe
         if filter_jenis:
-            filtered_wardrobe = [item for item in filtered_wardrobe if item['jenis'] in filter_jenis]
+            # Menggunakan kunci 'type'
+            filtered_wardrobe = [item for item in filtered_wardrobe if item['type'] in filter_jenis]
         if filter_warna:
-            filtered_wardrobe = [item for item in filtered_wardrobe if item['warna'] in filter_warna]
+            # Menggunakan kunci 'color'
+            filtered_wardrobe = [item for item in filtered_wardrobe if item['color'] in filter_warna]
         if filter_gaya:
-            filtered_wardrobe = [item for item in filtered_wardrobe if filter_gaya.lower() in item['gaya'].lower()]
-
+            # Menggunakan kunci 'style'
+            filtered_wardrobe = [item for item in filtered_wardrobe if filter_gaya.lower() in item['style'].lower()]
 
         st.divider()
         st.write(f"Showing **{len(filtered_wardrobe)}** of **{len(wardrobe)}** total items.")
-
 
         # --- Tampilan Grid Visual (DENGAN CSS CARD) ---
         num_cols = 5
@@ -218,9 +195,10 @@ with tab2:
                         st.image("https://placehold.co/200x200/eee/aaa?text=No+Image", use_container_width=True)
                    
                     # Tampilkan detail
-                    st.markdown(f"<h6>{item['gaya']}</h6>", unsafe_allow_html=True)
-                    st.markdown(f"**Type:** {item['jenis']}")
-                    st.markdown(f"**Color:** {item['warna']}")
+                    # Menggunakan kunci 'style', 'type', 'color'
+                    st.markdown(f"<h6>{item['style']}</h6>", unsafe_allow_html=True)
+                    st.markdown(f"**Type:** {item['type']}")
+                    st.markdown(f"**Color:** {item['color']}")
                     st.caption(f"ID: {item['id']}")
                    
                     # FITUR BARU: Tombol Hapus
@@ -234,9 +212,6 @@ with tab2:
                         except Exception as e:
                             st.error(f"Failed to delete item: {e}")
 
-
-
-
 # =======================================================================
 # --- TAB 3: Mix & Match (OOTD Generator) (Update Desain) ---
 # =======================================================================
@@ -244,14 +219,12 @@ with tab3:
     st.header("Check OOTD Compatibility")
     st.write("Select 2 or 3 items from your digital closet to be rated by the AI Stylist.")
 
-
     wardrobe = load_wardrobe()
    
     if not wardrobe:
         st.warning("Your digital closet is empty. Please add items in Tab 1 first.")
     else:
         st.subheader("**Select Items:**")
-
 
         # --- Tampilan Grid Visual dengan Checkbox (DENGAN CSS CARD) ---
         num_cols = 5
@@ -270,14 +243,13 @@ with tab3:
                     else:
                         st.image("https://placehold.co/200x200/eee/aaa?text=No+Image", use_container_width=True)
                    
-                    item_label = f"({item['id']}) {item['gaya']}"
+                    # Menggunakan kunci 'style'
+                    item_label = f"({item['id']}) {item['style']}"
                    
                     if st.checkbox(item_label, key=f"select_{item['id']}"):
                         selected_items_data.append(item)
 
-
         st.divider()
-
 
         # --- Logika Cek OOTD ---
         st.subheader("Send to AI Stylist")
@@ -309,3 +281,4 @@ with tab3:
                         st.error("Failed to get feedback from the AI Stylist.")
         elif not is_ready_to_check:
             st.caption("Select at least 2 items to get a rating.")
+

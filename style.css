@@ -3,21 +3,21 @@
 
 /* --- Variabel Warna Global (Enhanced) --- */
 :root {
-    --primary-color: #6C63FF; /* Ungu yang modern */
-    --primary-gradient: linear-gradient(135deg, #6C63FF 0%, #8B7CFF 100%);
+    --primary-color: #11224E; /* Ungu yang modern */
+    --primary-gradient: linear-gradient(135deg, #FF8F8F 0%, #FF8F8F 100%);
     --secondary-color: #FF6584; /* Pink */
     --secondary-gradient: linear-gradient(135deg, #FF6584 0%, #FF8BA0 100%);
-    --accent-color: #00D4FF; /* Cyan untuk aksen */
+    --accent-color: #FF8F8F; /* Cyan untuk aksen */
     --danger-color: #FF4757; /* Merah modern */
-    --danger-hover: #FF3742; /* Merah lebih gelap */
+    --danger-hover: #FF8F8F; /* Merah lebih gelap */
     --success-color: #2ED573; /* Hijau sukses */
     --warning-color: #FFA726; /* Orange peringatan */
     --text-color: #2D3748; /* Abu gelap untuk teks */
     --text-light: #718096; /* Abu terang */
-    --bg-color: #FFFFFF;
-    --bg-light: #F7FAFC; /* Background utama lebih soft */
-    --bg-gradient: linear-gradient(135deg, #F7FAFC 0%, #EDF2F7 100%);
-    --border-color: #E2E8F0;
+    --bg-color: #FFF1CB;
+    --bg-light: #C2E2FA; /* Background utama lebih soft */
+    --bg-gradient: linear-gradient(135deg, #C2E2FA 0%, #C2E2FA 100%);
+    --border-color: #C2E2FA;
     --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.06);
     --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.08);
     --shadow-heavy: 0 8px 32px rgba(0, 0, 0, 0.12);
@@ -84,7 +84,7 @@ body, html, [data-testid="stApp"] {
 /* --- Style Tombol Global (Enhanced) --- */
 [data-testid="stButton"] button {
     background: var(--primary-gradient);
-    color: white;
+    color: #C2E2FA;
     font-weight: 600;
     border: none;
     border-radius: var(--border-radius);
