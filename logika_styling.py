@@ -85,18 +85,37 @@ def get_ootd_feedback(item_list, current_weather):
     model = genai.GenerativeModel('gemini-2.5-flash')
     
     # Ini adalah "Prompt Engineering"
+    # prompt = (
+    #     "Anda adalah 'OOTD Oracle', seorang fashion stylist AI yang ramah dan suportif.\n"
+    #     "Tugas Anda adalah menilai kecocokan kombinasi pakaian berikut yang diberikan dalam format JSON:\n"
+    #     f"{items_json_string}\n\n"
+    #     "Berdasarkan input tersebut, berikan penilaian untuk acara 'Santai' (Casual).\n"
+    #     "Berikan respons HANYA dalam format JSON yang valid berikut ini, tanpa teks tambahan di luar JSON:\n"
+    #     "{\n"
+    #     "  \"rating\": (angka 1-10),\n"
+    #     "  \"feedback\": \"(Komentar singkat, misal: 'Kombinasi ini Cocok!' atau 'Hmm, kurang pas.')\",\n"
+    #     "  \"saran\": \"(Satu kalimat saran perbaikan atau aksesoris, misal: 'Coba ganti atasan dengan warna netral seperti putih.' atau 'Tambahkan sneakers putih untuk look casual!')\"\n"
+    #     "}\n"
+    # )
     prompt = (
-        "Anda adalah 'OOTD Oracle', seorang fashion stylist AI yang ramah dan suportif.\n"
-        "Tugas Anda adalah menilai kecocokan kombinasi pakaian berikut yang diberikan dalam format JSON:\n"
-        f"{items_json_string}\n\n"
-        "Berdasarkan input tersebut, berikan penilaian untuk acara 'Santai' (Casual).\n"
-        "Berikan respons HANYA dalam format JSON yang valid berikut ini, tanpa teks tambahan di luar JSON:\n"
-        "{\n"
-        "  \"rating\": (angka 1-10),\n"
-        "  \"feedback\": \"(Komentar singkat, misal: 'Kombinasi ini Cocok!' atau 'Hmm, kurang pas.')\",\n"
-        "  \"saran\": \"(Satu kalimat saran perbaikan atau aksesoris, misal: 'Coba ganti atasan dengan warna netral seperti putih.' atau 'Tambahkan sneakers putih untuk look casual!')\"\n"
-        "}\n"
-    )
+            "Anda adalah 'OOTD Oracle', seorang fashion stylist AI yang ramah dan suportif.\n"
+            "Tugas Anda adalah menilai kecocokan kombinasi pakaian berikut yang diberikan dalam format JSON:\n"
+            f"{items_json_string}\n\n"
+            
+            # === PERUBAHAN DI SINI ===
+            f"Kondisi cuaca saat ini adalah: {current_weather}\n"
+            "Harap PERTIMBANGKAN cuaca ini dalam penilaian Anda (misal, jangan sarankan jaket tebal saat cuaca panas).\n"
+            # === AKHIR PERUBAHAN ===
+
+            "Berdasarkan input tersebut DAN KONDISI CUACA, berikan penilaian untuk acara 'Santai' (Casual).\n"
+            "Berikan respons HANYA dalam format JSON yang valid berikut ini, tanpa teks tambahan di luar JSON:\n"
+            "{\n"
+            "  \"rating\": (angka 1-10),\n"
+            "  \"feedback\": \"(Komentar singkat, misal: 'Kombinasi ini Cocok!' atau 'Hmm, kurang pas.')\",\n"
+            "  \"saran\": \"(Satu kalimat saran perbaikan ATAU pujian terkait cuaca, misal: 'Pilihan linen-mu pas untuk cuaca panas!' atau 'Mungkin terlalu gerah untuk cuaca ini.')\"\n"
+            "}\n"
+        )
+
     
     try:
         # Kirim prompt (teks saja) ke model
