@@ -19,7 +19,6 @@ This project is a case study in how **Blackbox.AI (The Coding Assistant)** empow
 * **Programming Language:** Python (3.11.9)
 * **Application Framework:** [Streamlit](https://streamlit.io/)
 * **AI Vision & Logic:** [Google Gemini API](https://ai.google.dev/) (Model `gemini-2.5-flash`)
-* **Styling:** Custom CSS
 * **Environment:** `venv` & `pip`
 
 ## 🚀 Getting Started
