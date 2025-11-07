@@ -2,6 +2,8 @@ import os
 import google.generativeai as genai
 from PIL import Image
 import json
+import io
+from rembg import remove
 
 # Inisialisasi Klien Google
 # Ini akan otomatis mengambil kunci GOOGLE_API_KEY
