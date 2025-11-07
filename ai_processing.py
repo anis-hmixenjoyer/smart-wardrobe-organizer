@@ -1,9 +1,10 @@
 import os
 import google.generativeai as genai
 from PIL import Image
-import requests
 import io
+from rembg import remove
 import json
+import io
 
 # Inisialisasi Klien Google
 # Ini akan otomatis mengambil kunci GOOGLE_API_KEY
@@ -28,43 +29,30 @@ def clean_json_response(response_text):
         return response_text  # Assume it's already clean JSON
 
 def remove_background(image_path):
-    print(f"Mengirim ke remove.bg API: {image_path}")
-    
-    # 1. Ambil API Key dari environment
-    api_key = os.environ.get("REMOVEBG_API_KEY")
-    if not api_key:
-        print("Error: REMOVEBG_API_KEY_NOT_SET. Menggunakan gambar original.")
-        # Kembalikan gambar original jika key tidak ada
-        return Image.open(image_path)
-
-    # 2. Siapkan request API
-    url = "https://api.remove.bg/v1/removebg"
-    headers = {'X-Api-Key': api_key}
-    
+    """
+    Menghapus background dari gambar dan mengembalikan
+    sebagai object PIL.Image.
+    """
+    print(f"Mulai menghapus background dari: {image_path}")
     try:
-        # Buka file dalam mode binary 'rb'
-        with open(image_path, 'rb') as f:
-            files = {'image_file': f}
-            
-            # 3. Kirim request
-            response = requests.post(url, files=files, headers=headers)
-
-        if response.status_code == 200:
-            # 4. Sukses! Konversi bytes (PNG) kembali ke object PIL
-            # Ini sama persis seperti output 'rembg' sebelumnya
-            processed_image = Image.open(io.BytesIO(response.content))
-            print("remove.bg API berhasil memproses gambar.")
-            return processed_image
-        else:
-            # 5. Gagal (misal: API key salah, kuota habis)
-            print(f"Error remove.bg API: {response.status_code} - {response.text}")
-            print("Menggunakan gambar original.")
-            return Image.open(image_path) # Kembalikan original
-
+        # Buka gambar original
+        with open(image_path, "rb") as f:
+            input_bytes = f.read()
+        
+        # 2. Gunakan rembg untuk menghapus background
+        # Ini mengembalikan bytes dari gambar PNG (dengan transparansi)
+        output_bytes = remove(input_bytes)
+        
+        # 3. Konversi bytes PNG kembali ke object PIL Image
+        # Ini penting agar app.py bisa menyimpannya
+        processed_image = Image.open(io.BytesIO(output_bytes))
+        print("Background berhasil dihapus.")
+        return processed_image
+    
     except Exception as e:
-        print(f"Error saat koneksi ke remove.bg API: {e}")
-        print("Menggunakan gambar original.")
-        return Image.open(image_path) # Kembalikan original
+        print(f"Error saat menghapus background: {e}")
+        # Jika gagal, kembalikan saja gambar originalnya
+        return Image.open(image_path)
 
 def classify_item(image_path):
     """Mengirim gambar ke Google Gemini Vision API untuk klasifikasi."""
