@@ -11,7 +11,7 @@ try:
     from ai_processing import classify_item, remove_background
     from data_management import load_wardrobe, save_item_to_wardrobe
     # (Ganti nama 'logika_styling' jika berbeda)
-    from logika_styling import get_ootd_feedback
+    from logika_styling import get_ootd_feedback, get_weather_data
 except ImportError:
     st.error("Gagal memuat file .py (ai_processing, data_management, logika_styling). Pastikan semua file ada di folder yang sama.")
     st.stop()
@@ -276,24 +276,64 @@ with tab3:
 
 
         # --- Logika Cek OOTD ---
-        st.subheader("Kirim ke AI Stylist")
-        is_ready_to_check = (len(selected_items) >= 2)
+        # st.subheader("Kirim ke AI Stylist")
+        # is_ready_to_check = (len(selected_items) >= 2)
        
+        # if st.button("Kasih Feedback, Oracle!", disabled=(not is_ready_to_check), type="primary", use_container_width=True):
+        #     if len(selected_items) > 3:
+        #         st.error("Pilih maksimal 3 item saja ya.")
+        #     else:
+        #         with st.spinner("AI Stylist sedang memadupadankan..."):
+        #             # 4. Panggil AI Styling (dari logika_styling.py)
+        #             feedback_result = get_ootd_feedback(selected_items)
+                   
+        #             if feedback_result:
+        #                 # 5. Tampilkan hasil dengan cantik
+        #                 st.subheader("Kata OOTD Oracle:")
+                       
+        #                 rating_val = feedback_result.get('rating', 0)
+        #                 st.metric(label="Rating Kecocokan", value=f"{rating_val}/10")
+                       
+        #                 st.info(f"**Feedback:** {feedback_result.get('feedback', 'N/A')}")
+        #                 st.success(f"**Saran:** {feedback_result.get('saran', 'N/A')}")
+        #             else:
+        #                 st.error("Gagal mendapatkan feedback dari AI Stylist.")
+        # elif not is_ready_to_check:
+        #     st.caption("Pilih minimal 2 item untuk dinilai.")
+        # --- Logika Cek OOTD ---
+        st.subheader("Kirim ke AI Stylist")
+        
+        # TAMBAHKAN INPUT KOTA DI SINI
+        city = st.text_input("Masukkan Kotamu (misal: Jakarta, Depok):", "Jakarta")
+        
+        is_ready_to_check = (len(selected_items) >= 2)
+        
         if st.button("Kasih Feedback, Oracle!", disabled=(not is_ready_to_check), type="primary", use_container_width=True):
-            if len(selected_items) > 3:
+            
+            # Validasi tambahan
+            if not city:
+                st.error("Harap masukkan nama kota untuk cek cuaca!")
+            elif len(selected_items) > 3:
                 st.error("Pilih maksimal 3 item saja ya.")
             else:
-                with st.spinner("AI Stylist sedang memadupadankan..."):
-                    # 4. Panggil AI Styling (dari logika_styling.py)
-                    feedback_result = get_ootd_feedback(selected_items)
-                   
+                with st.spinner(f"Mengecek cuaca di {city} dan memadupadankan..."):
+                    
+                    # 1. DAPATKAN INFO CUACA DULU
+                    current_weather_info = get_weather_data(city)
+                    
+                    # 2. PANGGIL FUNGSI DENGAN DUA ARGUMEN
+                    feedback_result = get_ootd_feedback(selected_items, current_weather_info)
+                    
                     if feedback_result:
-                        # 5. Tampilkan hasil dengan cantik
+                        # ... sisa kodemu (tampilkan hasil)
                         st.subheader("Kata OOTD Oracle:")
-                       
+                        
                         rating_val = feedback_result.get('rating', 0)
                         st.metric(label="Rating Kecocokan", value=f"{rating_val}/10")
-                       
+                        
+                        # Tampilkan juga info cuaca yang dipakai AI
+                        st.caption(f"Penilaian berdasarkan cuaca: {current_weather_info}")
+                        
                         st.info(f"**Feedback:** {feedback_result.get('feedback', 'N/A')}")
                         st.success(f"**Saran:** {feedback_result.get('saran', 'N/A')}")
                     else:
