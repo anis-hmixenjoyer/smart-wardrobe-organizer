@@ -5,7 +5,7 @@ from data_management import save_item_to_wardrobe, load_wardrobe
 print("--- Memulai Tes ---")
 
 # Ganti dengan nama file gambar Anda
-gambar_tes = "test_shirt.jpg" 
+gambar_tes = "Atasan.jpg" 
 
 print(f"Mencoba mengklasifikasikan {gambar_tes}...")
 
