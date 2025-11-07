@@ -1,6 +1,5 @@
 import streamlit as st
 from PIL import Image
-from rembg import remove
 import os
 import shutil  # Kita perlu ini untuk menyalin file
 
