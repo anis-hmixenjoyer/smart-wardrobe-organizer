@@ -263,8 +263,3 @@ with tab3:
                         st.error("Gagal mendapatkan feedback dari AI Stylist.")
         elif not is_ready_to_check:
             st.caption("Pilih minimal 2 item untuk dinilai.")
-
-# Untuk menjalankan aplikasi ini:
-# 1. Buka terminal
-# 2. Aktifkan venv: .\venv\Scripts\activate
-# 3. Jalankan: streamlit run app.py
