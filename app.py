@@ -98,7 +98,7 @@ with tab1:
    
     with col1:
         if uploaded_image:
-            st.image(uploaded_image, caption="Gambar yang di-upload", use_column_width=True)
+            st.image(uploaded_image, caption="Gambar yang di-upload", use_container_width=True)
            
             # Tombol untuk memproses gambar
             if st.button("Analisa Pakaian Ini", key="analyze_btn", use_container_width=True):
@@ -212,9 +212,9 @@ with tab2:
                
                 # Tampilkan gambar jika ada, jika tidak, tampilkan placeholder
                 if os.path.exists(img_path):
-                    st.image(img_path, use_column_width=True, caption=f"ID: {item['id']}")
+                    st.image(img_path, use_container_width=True, caption=f"ID: {item['id']}")
                 else:
-                    st.image("https://placehold.co/200x200/eee/aaa?text=No+Image", use_column_width=True)
+                    st.image("https://placehold.co/200x200/eee/aaa?text=No+Image", use_container_width=True)
                
                 # Tampilkan detail
                 st.markdown(f"**{item['gaya']}**")
@@ -249,9 +249,9 @@ with tab3:
                 img_path = item.get('image_path', '')
                
                 if os.path.exists(img_path):
-                    st.image(img_path, use_column_width=True)
+                    st.image(img_path, use_container_width=True)
                 else:
-                    st.image("https://placehold.co/200x200/eee/aaa?text=No+Image", use_column_width=True)
+                    st.image("https://placehold.co/200x200/eee/aaa?text=No+Image", use_container_width=True)
                
                 # Buat label yang deskriptif untuk checkbox
                 item_label = f"({item['id']}) {item['gaya']}"
