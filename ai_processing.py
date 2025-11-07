@@ -8,13 +8,13 @@ import json
 try:
     genai.configure(api_key=os.environ.get("GOOGLE_API_KEY"))
 except Exception as e:
-    print(f"Error Konfigurasi Google API: {e}. Pastikan GOOGLE_API_KEY sudah di set.")
+    print(f"Error configuring Google API: {e}. Make sure GOOGLE_API_KEY is set.")
 
 def clean_json_response(response_text):
     """
     Helper function to clean and extract JSON from Gemini's response.
     Handles markdown code blocks like ```json ... ``` or ``` ... ```.
-    (Fungsi ini disamakan dengan styling_logic.py agar konsisten)
+    (This function is kept consistent with styling_logic.py)
     """
     response_text = response_text.strip()
     if response_text.startswith("```json") and response_text.endswith("```"):
@@ -26,10 +26,10 @@ def clean_json_response(response_text):
 
 def remove_background(image_path):
     """
-    Menghapus background dari gambar dan mengembalikan
-    sebagai object PIL.Image.
+    Removes the background from an image and returns it
+    as a PIL.Image object.
     """
-    print(f"Mulai menghapus background dari: {image_path}")
+    print(f"Starting background removal for: {image_path}")
     try:
         with open(image_path, "rb") as f:
             input_bytes = f.read()
@@ -37,45 +37,45 @@ def remove_background(image_path):
         output_bytes = remove(input_bytes)
         
         processed_image = Image.open(io.BytesIO(output_bytes))
-        print("Background berhasil dihapus.")
+        print("Background removed successfully.")
         return processed_image
     
     except Exception as e:
-        print(f"Error saat menghapus background: {e}")
+        print(f"Error during background removal: {e}")
         return Image.open(image_path)
 
 def classify_item(image_path):
-    """Mengirim gambar ke Google Gemini Vision API untuk klasifikasi."""
+    """Sends an image to the Google Gemini Vision API for classification."""
     try:
         img = Image.open(image_path)
 
         model = genai.GenerativeModel('gemini-2.5-flash')
 
         prompt = (
-            "Klasifikasikan item pakaian dalam gambar ini. "
-            "Berikan respons HANYA dalam format JSON berikut: "
-            "{'jenis': '...', 'warna': '...', 'gaya': '...'}."
-            "Jenis harus salah satu dari: Atasan, Bawahan, Luaran, Gaun, Sepatu, Aksesori. "
-            "Gaya harus mencakup model atau bahan (misal: 'Kemeja Polos', 'Jeans Slim Fit')."
+            "Classify the clothing item in this image. "
+            "Provide the response ONLY in the following JSON format. "
+            "IMPORTANT: All keys and values in the JSON must be in English:"
+            "{'type': '...', 'color': '...', 'style': '...'}."
+            "The 'type' must be one of: Top, Bottom, Outerwear, Dress, Shoes, Accessory. "
+            "The 'style' must describe the model or material (e.g., 'Plain Shirt', 'Slim Fit Jeans')."
         )
 
         response = model.generate_content([prompt, img])
-        
         ai_output = clean_json_response(response.text)
         
         parsed_json = json.loads(ai_output)
         
-        required_keys = {"jenis", "warna", "gaya"}
+        required_keys = {"type", "color", "style"}
         if not required_keys.issubset(parsed_json.keys()):
-            raise ValueError("Respons AI Vision tidak memiliki format JSON yang diharapkan.")
+            raise ValueError("AI Vision response is missing the expected English JSON format.")
 
         return parsed_json
 
     except json.JSONDecodeError as e:
-        print(f"Error parsing JSON dari AI Vision: {e}")
+        print(f"Error parsing JSON from AI Vision: {e}")
         ai_output = response.text
-        print(f"Raw output dari AI Vision: {ai_output}")
+        print(f"Raw output from AI Vision: {ai_output}")
         return None
     except Exception as e:
-        print(f"Error saat klasifikasi AI Vision (Gemini): {e}")
+        print(f"Error during AI Vision classification (Gemini): {e}")
         return None
