@@ -25,6 +25,32 @@ def clean_json_response(response_text):
     else:
         return response_text  # Assume it's already clean JSON
 
+def remove_background(image_path):
+    """
+    Menghapus background dari gambar dan mengembalikan
+    sebagai object PIL.Image.
+    """
+    print(f"Mulai menghapus background dari: {image_path}")
+    try:
+        # Buka gambar original
+        with open(image_path, "rb") as f:
+            input_bytes = f.read()
+        
+        # 2. Gunakan rembg untuk menghapus background
+        # Ini mengembalikan bytes dari gambar PNG (dengan transparansi)
+        output_bytes = remove(input_bytes)
+        
+        # 3. Konversi bytes PNG kembali ke object PIL Image
+        # Ini penting agar app.py bisa menyimpannya
+        processed_image = Image.open(io.BytesIO(output_bytes))
+        print("Background berhasil dihapus.")
+        return processed_image
+    
+    except Exception as e:
+        print(f"Error saat menghapus background: {e}")
+        # Jika gagal, kembalikan saja gambar originalnya
+        return Image.open(image_path)
+
 def classify_item(image_path):
     """Mengirim gambar ke Google Gemini Vision API untuk klasifikasi."""
     try:

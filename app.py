@@ -7,7 +7,7 @@ import shutil  # Kita perlu ini untuk menyalin file
 # Impor fungsi dari file rekan satu tim kamu
 # Pastikan semua file (.py) ada di folder yang sama
 try:
-    from ai_processing import classify_item
+    from ai_processing import classify_item, remove_background
     from data_management import load_wardrobe, save_item_to_wardrobe
     # (Ganti nama 'logika_styling' jika berbeda)
     from logika_styling import get_ootd_feedback
@@ -129,34 +129,47 @@ with tab1:
 
 
             if st.button("Simpan ke Lemari Digital", key="save_btn", type="primary", use_container_width=True):
-               
-                # --- LOGIKA SIMPAN BARU (FIX) ---
+                
                 item_data = st.session_state.current_item
                 temp_path = st.session_state.temp_image_path
-               
-                # 1. Dapatkan ID baru
-                current_wardrobe = load_wardrobe()
-                new_id = get_new_item_id(current_wardrobe)
-               
-                # 2. Pindahkan gambar ke penyimpanan permanen
-                permanent_image_path = make_image_permanent(temp_path, new_id)
-               
-                if permanent_image_path:
-                    # 3. Tambahkan ID dan Path Gambar ke data
-                    item_data['id'] = new_id
-                    item_data['image_path'] = permanent_image_path
-                   
-                    # 4. Panggil Data Management (dari data_management.py)
-                    save_item_to_wardrobe(item_data)
-                    st.success(f"Item {new_id} berhasil disimpan ke lemari!")
-                    st.balloons()
-                   
-                    # Hapus dari state setelah disimpan
-                    del st.session_state.current_item
-                    del st.session_state.temp_image_path
-                    st.rerun() # Refresh untuk membersihkan
-                else:
-                    st.error("Gagal menyimpan gambar. Proses dibatalkan.")
+                
+                with st.spinner("Menghapus background dan menyimpan..."):
+                    # 1. Dapatkan ID baru
+                    current_wardrobe = load_wardrobe()
+                    new_id = get_new_item_id(current_wardrobe)
+                    
+                    # 2. PANGGIL FUNGSI BARU (dari ai_processing.py)
+                    # Ini mengembalikan object PIL.Image yang sudah bersih
+                    processed_pil_image = remove_background(temp_path)
+                    
+                    # 3. Tentukan path permanen
+                    # WAJIB .png agar transparansi tersimpan
+                    permanent_path = os.path.join(PERMANENT_DIR, f"{new_id}.png")
+                    
+                    try:
+                        # 4. Simpan gambar yang sudah diproses ke path permanen
+                        processed_pil_image.save(permanent_path, "PNG")
+                        
+                        # Hapus file sementara (yang original)
+                        os.remove(temp_path)
+                        
+                        # 5. Tambahkan ID dan Path Gambar (.png) ke data
+                        item_data['id'] = new_id
+                        item_data['image_path'] = permanent_path # Path ke file .png
+                        
+                        # 6. Panggil Data Management
+                        save_item_to_wardrobe(item_data)
+                        
+                        st.success(f"Item {new_id} berhasil disimpan (tanpa background)!")
+                        st.balloons()
+                        
+                        # Hapus dari state setelah disimpan
+                        del st.session_state.current_item
+                        del st.session_state.temp_image_path
+                        st.rerun() # Refresh untuk membersihkan
+                        
+                    except Exception as e:
+                        st.error(f"Gagal menyimpan gambar yang diproses: {e}")
 
 
 # =======================================================================
