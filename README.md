@@ -13,7 +13,6 @@ This project is a case study in how **Blackbox.AI (The Coding Assistant)** empow
 * **Automatic Cataloging:** Upload a clothing item, and the AI (Gemini) will instantly identify its **Type**, **Color**, and **Style**.
 * **Visual Digital Closet:** View your entire collection in an easy-to-search, filterable visual grid.
 * **AI Mix & Match:** Select 2-3 items from your closet, and the AI will provide a compatibility **rating** and styling advice.
-* **Modern Design:** A clean, responsive interface built on Streamlit with custom CSS styling.
 
 ## 💻 Tech Stack
 
