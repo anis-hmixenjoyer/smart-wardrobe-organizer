@@ -4,21 +4,24 @@
 
 *A project for the Blackbox.AI x PNJ Hackathon.*
 
-This web application allows you to catalog your entire wardrobe just by uploading photos. Our AI analyzes your clothes, saves them to a digital closet, and then acts as your personal fashion stylist to give you mix-and-match recommendations.
+This web application allows you to catalog your entire wardrobe just by uploading photos. Our AI analyzes your clothes, removes the background, saves them to a digital closet, and then acts as your personal fashion stylist to give you mix-and-match recommendations based on your local weather.
 
-This project is a case study in how **Blackbox.AI (The Coding Assistant)** empowers developers to rapidly integrate and build with other advanced AI APIs (like Google Gemini).
+This project is a case study in how **Blackbox.AI (The Coding Assistant)** empowers developers to rapidly integrate and build with other advanced AI APIs.
 
 ## ✨ Key Features
 
-* **Automatic Cataloging:** Upload a clothing item, and the AI (Gemini) will instantly identify its **Type**, **Color**, and **Style**.
+* **Automatic Cataloging:** Upload a clothing item, and the AI API will instantly identify its **Type**, **Color**, and **Style**.
+* **AI Background Removal:** Automatically removes the background from your clothing photos (using `rembg`) for a clean look in your digital closet.
 * **Visual Digital Closet:** View your entire collection in an easy-to-search, filterable visual grid.
-* **AI Mix & Match:** Select 2-3 items from your closet, and the AI will provide a compatibility **rating** and styling advice.
+* **Weather-Aware AI Stylist:** Select 2-3 items, and our AI Stylist will provide a compatibility **rating** and styling advice **based on your local weather**.
 
 ## 💻 Tech Stack
 
 * **Programming Language:** Python (3.11.9)
 * **Application Framework:** [Streamlit](https://streamlit.io/)
 * **AI Vision & Logic:** [Google Gemini API](https://ai.google.dev/) (Model `gemini-2.5-flash`)
+* **Background Removal:** [rembg](https://github.com/danielgatis/rembg)
+* **Weather Data:** [OpenWeatherMap API](https://openweathermap.org/api)
 * **Environment:** `venv` & `pip`
 
 ## 🚀 Getting Started
@@ -35,7 +38,7 @@ Follow these steps to get a local copy up and running.
 1.  **Clone the Repository**
     Open your terminal and clone the project:
     ```bash
-    git clone https://github.com/anis-hmixenjoyer/smart-wardrobe-organizer.git
+    git clone [https://github.com/anis-hmixenjoyer/smart-wardrobe-organizer.git](https://github.com/anis-hmixenjoyer/smart-wardrobe-organizer.git)
     cd smart-wardrobe-organizer
     ```
 
@@ -59,26 +62,38 @@ Follow these steps to get a local copy up and running.
     pip install -r requirements.txt
     ```
 
-### 3. API Key Configuration (Crucial Step)
+    > **Note on `rembg`:**
+    > The `rembg` library requires a specific runtime. If you encounter an error when running the app, you may need to install `onnxruntime` manually:
+    > ```bash
+    > pip install onnxruntime
+    > ```
 
-This application requires a Google Gemini API Key to function.
+### 3. API Key & Environment Setup (.env)
 
-1.  Go to [**Google AI Studio**](https://aistudio.google.com/).
-2.  Log in and create a new API Key.
-3.  The **Free Tier** is more than sufficient for this hackathon.
-4.  **Save the API Key to Your Local Environment.**
-    Open a terminal (NOT inside the `venv`) and run:
-    ```bash
-    # For Windows
-    setx GOOGLE_API_KEY "PASTE_YOUR_API_KEY_HERE"
-    
-    # For Mac/Linux
-    echo "export GOOGLE_API_KEY='YOUR_KEY_HERE'" >> ~/.zshrc && source ~/.zshrc
+This application requires **two API keys** to function. We will use a `.env` file to keep them secure.
+
+1.  **Create the `.env` file**
+    In the main project folder (next to `app.py`), create a new file named:
+    `.env`
+
+2.  **Add Your Keys**
+    Open the `.env` file with a text editor and add your API keys in this format:
+
+    ```ini
+    GOOGLE_API_KEY="PASTE_YOUR_GEMINI_API_KEY_HERE"
+    OPENWEATHER_API_KEY="PASTE_YOUR_OPENWEATHER_API_KEY_HERE"
     ```
-5.  **IMPORTANT:** **Close and re-open** your terminal for the new key to be recognized.
+
+3.  **Where to Get These Keys:**
+    * **`GOOGLE_API_KEY`:** Get it from [**Google AI Studio**](https://aistudio.google.com/). Log in and create a new API key. The **Free Tier** is more than sufficient.
+    * **`OPENWEATHER_API_KEY`:**
+        1.  Sign up at [**OpenWeatherMap**](https://openweathermap.org/price).
+        2.  Choose the **"Free"** plan (Current Weather Data).
+        3.  After signing up, go to "My API Keys" to find your key. 
 
 > **SECURITY WARNING:**
-> Never hard-code your API key in the (`.py`) files or push it to GitHub. This project's `.gitignore` is set up to ignore data files, but it is your responsibility to keep your API key secure locally.
+> The `.gitignore` file in this project is already configured to **ignore the `.env` file**. This is VERY IMPORTANT to prevent your secret API keys from being uploaded to GitHub.
+> **Never** share your `.env` file or write your keys directly in your `.py` files.
 
 ## ▶️ Running the Application
 
